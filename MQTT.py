@@ -1,9 +1,6 @@
-
-# coding: utf-8
-
-# In[1]:
-
-
+/**
+ * Import the necessary libraries
+ */
 import paho.mqtt.client as mqtt
 import json
 import MySQLdb
@@ -13,9 +10,9 @@ import dateutil.parser
 import base64
 
 
-# In[2]:
-
-
+/**
+ * Required information to connect to TTN
+ */
 TTN_appEui = '****************'
 TTN_appKey  = '********************************'
 TTN_user = '<yourUser>'
@@ -24,18 +21,18 @@ TTN_tls_path = '<yourCertificate>'
 TTN_topic = '<appID>/devices/<devID>/up'
 
 
-# In[3]:
-
-
+/**
+ * Required information to connect to your database
+ */
 MySQL_host = '<yourHost>'
 MySQL_user = '<yourUser>'
 MySQL_password = '<yourPswd>'
 MySQL_db = '<yourDB>'
 
 
-# In[4]:
-
-
+/**
+ * Custom on_connect method
+ */
 def on_connect(mqttc, mosq, obj, rc):
     if (rc == 0):
         print('Successful connection with result code: ' + str(rc))
@@ -44,16 +41,17 @@ def on_connect(mqttc, mosq, obj, rc):
         print('Failed connection with result code: ' + str(rc))
 
 
-# In[5]:
-
-
+/**
+ * Custom on_subscribe method
+ */
 def on_subscribe(mosq, obj, mid, granted_qos):
     print('Subscribed to: ' + TTN_topic)
 
 
-# In[6]:
-
-
+/**
+ * Function to retrieve the values of interest of the
+ * incoming message
+ */
 def getFieldValues(payloadFields):
     humidity = payloadFields.get('hum')
     temperature = payloadFields.get('temp')
@@ -63,9 +61,9 @@ def getFieldValues(payloadFields):
     return humidity, temperature, latitude, longitude
 
 
-# In[7]:
-
-
+/**
+ * Custom on_message method
+ */
 def on_message(mqttc, obj, msg):
     try:
         x = json.loads(msg.payload.decode('utf-8'))
@@ -81,20 +79,31 @@ def on_message(mqttc, obj, msg):
         pass
 
 
-# In[8]:
-
-
+/**
+ * Variable instantiation
+ */
 mqttc = mqtt.Client()
 db = MySQLdb.connect(host=MySQL_host, user=MySQL_user, passwd=MySQL_password, db=MySQL_db)
 cursor = db.cursor()
 
+/**
+ * Override paho's methods
+ */
 mqttc.on_connect=on_connect
 mqttc.on_message=on_message
 mqttc.on_subscribe=on_subscribe
 
+/**
+ * Connection setup
+ */
 mqttc.username_pw_set(TTN_user, TTN_password)
 mqttc.tls_set(TTN_tls_path)
 mqttc.connect('<yourRegion>.thethings.network', 8883, 10)
 
+
+/**
+ * Mantain the established connection
+ * Close database after any changes
+ */
 mqttc.loop_forever()
 db.close()
