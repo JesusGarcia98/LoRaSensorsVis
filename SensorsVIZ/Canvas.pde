@@ -50,7 +50,8 @@ public class Canvas extends PGraphics2D {
     this.translate(-origin.x, -origin.y);
   }
 
-  @Override void endDraw() {
+  @Override 
+    void endDraw() {
     this.popMatrix();
     super.endDraw();
   }

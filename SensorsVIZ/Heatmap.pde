@@ -104,10 +104,8 @@ public class Heatmap {
       for (Sensor sensor : sensors.SENSORS) {
         if (sensor instanceof HistoricalSensor) {
           HistoricalSensor h = (HistoricalSensor) sensor;
-          if (h.getPositions().size() > 0) {
-            for (PVector pos : h.getPositions()) {
-              gradientMap = addGradientPoint(gradientMap, pos.x, pos.y);
-            }
+          for (PVector pos : h.getPositions()) {
+            gradientMap = addGradientPoint(gradientMap, pos.x, pos.y);
           }
         }
       }
@@ -155,10 +153,10 @@ public class Heatmap {
    */
   private PImage colorize(PImage grayscaleMap, PImage gradient) {
     PImage coloredMap = createImage(WIDTH, HEIGHT, ARGB);
-    for (int i=0; i< grayscaleMap.pixels.length; i++) {
+    for (int i = 0; i < grayscaleMap.pixels.length; i++) {
       int c = gradient.pixels[ (int) map(grayscaleMap.pixels[i], 0, maxValue, 0, gradient.pixels.length-1) ];
       coloredMap.pixels[i] = c;
-    } 
+    }
     return coloredMap;
   }
 

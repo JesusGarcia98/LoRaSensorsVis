@@ -1,8 +1,9 @@
 /**
  * Generate a shape object that can be distorted using a bunch of control points to fit an irregular
  * 3D surface where a canvas is projected using a beamer
- * @author    Marc Vilella
- * @version   0.3
+ * @author      Marc Vilella
+ * @modified    Jesús García
+ * @version     0.3
  */
 public class WarpSurface {
 
@@ -72,6 +73,34 @@ public class WarpSurface {
 
 
   /**
+   * Draw the canvas in surface, warping it as a texture. While in
+   * calibration mode the control points can be moved with a mouse drag
+   * @param canvas    PGraphics object to be distorted
+   */
+  public void draw(PGraphics canvas) {
+
+    float dX = canvas.width / (cols - 1);
+    float dY = canvas.height / (rows - 1);
+
+    for (int y = 0; y < rows -1; y++) {
+      beginShape(TRIANGLE_STRIP);
+      texture(canvas);
+      for (int x = 0; x < cols; x++) {
+
+        if (calibrateMode) {
+          stroke(#FF0000);
+          strokeWeight(0.5);
+        } else noStroke();
+
+        vertex(points[y][x].x, points[y][x].y, x * dX, y * dY);
+        vertex(points[y+1][x].x, points[y+1][x].y, x * dX, (y+1) * dY);
+      }
+      endShape();
+    }
+  }
+
+
+  /**
    * Toggle callibration mode of surface, allowing to drag and move control points
    */
   public void toggleCalibration() {
@@ -89,14 +118,15 @@ public class WarpSurface {
 
 
   /**
-   * Load the position of control points from an XML file, by default "warp.xml"
+   * Loads the position of control points from an XML file
+   * @param path  Path to the XML file
    */
-  public void loadConfig() {
-    XML settings = loadXML(sketchPath("warp.xml"));
-    XML size = settings.getChild("size");
+  public void loadConfig(String path) {
+    processing.data.XML settings = loadXML(sketchPath(path));
+    processing.data.XML size = settings.getChild("size");
     rows = size.getInt("rows");
     cols = size.getInt("cols");
-    XML[] xmlPoints = settings.getChild("points").getChildren("point");
+    processing.data.XML[] xmlPoints = settings.getChild("points").getChildren("point");
     points = new PVector[rows][cols];
     for (int i = 0; i < xmlPoints.length; i++) {
       int x = i % cols;
@@ -107,23 +137,23 @@ public class WarpSurface {
 
 
   /**
-   * Save the position of control points into an XML file, by default "warp.xml"
+   * Saves the position of control points into an XML file
+   * @param path  Name to save the XML file
    */
-  public void saveConfig() {
-    XML settings = new XML("settings");
-    XML size = settings.addChild("size");
+  public void saveConfig(String path) {
+    processing.data.XML settings = new processing.data.XML("settings");
+    processing.data.XML size = settings.addChild("size");
     size.setInt("cols", cols);
     size.setInt("rows", rows);
-    XML xmlPoints = settings.addChild("points");
+    processing.data.XML xmlPoints = settings.addChild("points");
     for (int y = 0; y < rows; y++) {
       for (int x = 0; x < cols; x++) {
-        XML point = xmlPoints.addChild("point");
+        processing.data.XML point = xmlPoints.addChild("point");
         point.setFloat("x", points[y][x].x);
         point.setFloat("y", points[y][x].y);
       }
     }
-    saveXML(settings, "warp.xml");
-    println("Warp configuration saved");
+    saveXML(settings, path);
   }
 
 
@@ -167,13 +197,6 @@ public class WarpSurface {
     if (calibrateMode) {
       switch(e.getAction()) {
       case KeyEvent.PRESS:
-        switch(e.getKey()) {
-        case 'l':
-          loadConfig();
-          break;
-        case 's':
-          saveConfig();
-        }
         switch(e.getKeyCode()) {
         case UP:
           this.move(0, -5);

@@ -36,7 +36,7 @@ PVector[] roi = new PVector[] {
 String roadnetworkPath = "roads/roads.geojson";
 
 // MQTT configuration
-String broker = "ssl://<yourRegion>.thethings.network:8883";
+String broker = "<>://eu.thethings.network:<port>";
 String user = "<appID>";
 String password = "ttn-account-v2.<lotsOfCharacters>";
 String topic = "<appID>/devices/<devID>/up";
@@ -45,22 +45,43 @@ String topic = "<appID>/devices/<devID>/up";
 String sensorsPath = "sensors/sensors.json";
 
 // Color gradient configuration
+WarpSurface gradSurface;
+PGraphics gradCanvas;
 color mint, maxt;
 boolean showGradient = true;
 
 // Heatmap object
 Heatmap heatmap;
 
+//Dashboard object
+WarpSurface dashSurface;
+Dashboard dashboard;
+PGraphics dashCanvas;
+
+//Font
+PFont myFont;
+
+
+void settings() {
+  fullScreen(P3D, SPAN);
+}
+
+
 void setup() {
-  size(1400, 800, P2D);
   smooth();
+
+  myFont = createFont("Muli", 15);
 
   BG = loadImage(bgPath);
   simWidth = BG.width;
   simHeight = BG.height;
 
   surface = new WarpSurface(this, 900, 300, 10, 5);
-  surface.loadConfig();
+  surface.loadConfig("warp.xml");
+
+  dashSurface = new WarpSurface(this, 1400, 160, 4, 2);
+  dashSurface.loadConfig("dash.xml");
+  dashCanvas = createGraphics(1400, 160);
 
   canvas = new Canvas(this, simWidth, simHeight, bounds, roi);
 
@@ -73,55 +94,72 @@ void setup() {
 
   sensors = new Sensors(sensorsPath, client, roadnetwork);
 
+  dashboard = new Dashboard(sensors.getSensors());
+
   mint = color(0, 255, 255);
   maxt = color(255, 255, 0);
 
   heatmap = new Heatmap(0, 0, simWidth, simHeight);
   heatmap.setBrush("hmap/brush_80x80.png", 40);
   heatmap.addGradient("neon", "hmap/neon.png");
+  
+  gradCanvas = createGraphics(200, 30);
+  gradSurface = new WarpSurface(this, 200, 30, 2, 2);
+  gradSurface.loadConfig("grad.xml");
 }
 
 
 void draw() {
-  background(255);
+  background(0);
 
   canvas.beginDraw();
   canvas.background(255);
-  if (showBG) canvas.image(BG, 0, 0);
+  if (showBG) canvas.image(BG, 0, 0); 
   roadnetwork.draw(canvas, 1, #c0c0c0);
   sensors.draw(canvas, 4);
   heatmap.draw(canvas, 200, 650, 1000, 50);
   canvas.endDraw();
-
   surface.draw(canvas);
 
-  if (showGradient) drawGradient("Temperature range", "-10", "30", 200, 650, 1000, 50, mint, maxt);
+
+  dashCanvas.beginDraw();
+  dashCanvas.background(255);
+  dashboard.draw(dashCanvas, myFont);
+  dashCanvas.endDraw();
+  dashSurface.draw(dashCanvas);
+
+  gradCanvas.beginDraw();
+  gradCanvas.background(255);
+  drawGradient(gradCanvas, "Temperature range", "-10", "30", 200, 30, mint, maxt);
+  gradCanvas.endDraw();
+  gradSurface.draw(gradCanvas);
 }
 
 
-void drawGradient(String title, String min, String max, int x, int y, float w, float h, color c1, color c2) {
-  noFill();
-  for (int i = x; i <= x+w; i++) {
-    float inter = map(i, x, x+w, 0, 1);
+void drawGradient(PGraphics canvas, String title, String min, String max, float w, float h, color c1, color c2) {
+  canvas.noFill();
+  canvas.textFont(myFont);
+  for (int i = 0; i <= w; i++) {
+    float inter = map(i, 0, w, 0, 1);
     color c = lerpColor(c1, c2, inter);
-    stroke(c);
-    line(i, y, i, y+h);
+    canvas.stroke(c);
+    canvas.line(i, 0, i, h);
   }
 
   // Legend
-  pushMatrix();
-  translate(x, y);
-  fill(#888888); 
-  noStroke(); 
-  textSize(20); 
-  textAlign(CENTER, TOP);
-  text(title, w/2, -h/2);
-  textSize(18); 
-  textAlign(LEFT, BOTTOM);
-  text(min, 0, 1.5 * h);
-  textAlign(RIGHT, BOTTOM);
-  text(max, w, 1.5 * h);
-  popMatrix();
+  canvas.pushMatrix();
+  canvas.translate(0, 0);
+  canvas.fill(0); 
+  canvas.noStroke(); 
+  canvas.textSize(10); 
+  canvas.textAlign(CENTER, TOP);
+  canvas.text(title, w/2, 0);
+  canvas.textSize(9); 
+  canvas.textAlign(LEFT, BOTTOM);
+  canvas.text(min, 0, h);
+  canvas.textAlign(RIGHT, BOTTOM);
+  canvas.text(max, w, h);
+  canvas.popMatrix();
 }
 
 
@@ -131,18 +169,40 @@ void keyPressed() {
     showBG = !showBG;
     break;
 
-  case 't':
+  case 'c':
+    surface.toggleCalibration();
+    break;
+
+  case 'd':
+    dashSurface.toggleCalibration();
+    break;
+
+  case 'e':
+    dashSurface.saveConfig("dash.xml");
+    println("Dashboard configuration saved");
+    break;
+
+  case 'f':
+    gradSurface.toggleCalibration();
+    break;
+
+  case 'g':
+    gradSurface.saveConfig("grad.xml");
+    println("Gradient configuration saved");
+    break;
+
+  case 'h':
     sensors.toggleHistoricals();
     break;
 
-  case 'v':
-    showGradient = !showGradient;
-    heatmap.toggleVisibility();
-    heatmap.update("Sensors paths", sensors, "neon");
+  case 's':
+    surface.saveConfig("warp.xml");
+    println("Warp configuration saved");
     break;
 
-  case 'w':
-    surface.toggleCalibration();
+  case 'v':
+    heatmap.toggleVisibility();
+    heatmap.update("Sensors paths", sensors, "neon");
     break;
   }
 }

@@ -46,17 +46,17 @@ public class Lanes {
    */
   public void load(String file) {
 
-    JSONObject roadNetwork = loadJSONObject(file);
-    JSONArray lanes = roadNetwork.getJSONArray("features");
+    processing.data.JSONObject roadNetwork = loadJSONObject(file);
+    processing.data.JSONArray lanes = roadNetwork.getJSONArray("features");
 
     for (int i = 0; i < lanes.size(); i++) {
-      JSONObject lane = lanes.getJSONObject(i);
+      processing.data.JSONObject lane = lanes.getJSONObject(i);
 
-      JSONObject props = lane.getJSONObject("properties");
+      processing.data.JSONObject props = lane.getJSONObject("properties");
       int id = props.isNull("FID") ? -1: props.getInt("FID");
       String name = props.isNull("name") ? "null" : props.getString("name");
 
-      JSONArray points = lane.getJSONObject("geometry").getJSONArray("coordinates");
+      processing.data.JSONArray points = lane.getJSONObject("geometry").getJSONArray("coordinates");
       ArrayList vertices = new ArrayList();
 
       for (int j = 0; j < points.size(); j++) {

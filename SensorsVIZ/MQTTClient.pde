@@ -106,7 +106,7 @@ public class MQTTClient extends Observable {
 
       @Override
         public void messageArrived(String topic, MqttMessage message) throws Exception {
-        JSONObject payload = JSONObject.parse(new String(message.getPayload()));
+        processing.data.JSONObject payload = processing.data.JSONObject.parse(new String(message.getPayload()));
         setChanged();
         notifyObservers(payload);
       }
