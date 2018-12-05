@@ -19,9 +19,9 @@ public class Sensors {
    * @param client  MQTTClient in which we will add the observers
    * @param roads   Lanes Object in which the sensors will be placed
    */
-  public Sensors(String file, MQTTClient client, Lanes roads) {
+  public Sensors(String file, MQTTClient client, Lanes roads, WarpSurface surface) {
     roadnetwork = roads;
-    load(file, client);
+    load(file, client, surface);
   }
 
 
@@ -30,7 +30,7 @@ public class Sensors {
    * @param file  JSON file direction
    * @param client  MQTTClient in which we will add the observers
    */
-  private void load(String file, MQTTClient client) {
+  private void load(String file, MQTTClient client, WarpSurface surface) {
     processing.data.JSONObject object = loadJSONObject(file);
     processing.data.JSONArray sensors = object.getJSONArray("sensors");
 
@@ -55,6 +55,8 @@ public class Sensors {
 
         client.addObserver(newSensor);
         client.addObserver(newHistorical);
+
+        surface.addObserver(newSensor);
       }
     }
   }
@@ -163,7 +165,8 @@ public abstract class Sensor implements Observer {
  */
 public class GPSTempHum extends Sensor {
   private PVector lastPosition, currPosition;
-  private float rad = random(0, 20);
+  private LatLon coordinates;
+  private float rad = random(10, 20);
   private boolean decreasing = true;
   private color c;
   private boolean selected;
@@ -186,13 +189,23 @@ public class GPSTempHum extends Sensor {
 
 
   /**
-   * Observer function that updates values of the dict and transforms (lat, long) to (X, Y) to update the position.
-   * Also updates the arrays storing the most recently collected values
+   * Observer function which performs certain updates depending on the Observable that sent the data
    * @param obs Observable from which we are getting the data
    * @param obj Object the Observable is sending
    */
   @Override
     public void update(Observable obs, Object obj) {
+    if (obs instanceof MQTTClient) updateValues(obj);
+    else select(obj);
+  }
+
+
+  /**
+   * Updates values of the dict and transforms (lat, long) to (X, Y) to update the position.
+   * Also updates the arrays storing the most recently collected values and the polar coordinates
+   * @param obj Object the Observable is sending
+   */
+  private void updateValues(Object obj) {
     processing.data.JSONObject payload = (processing.data.JSONObject)obj;
     String sensorID = payload.getString("dev_id");
 
@@ -219,6 +232,7 @@ public class GPSTempHum extends Sensor {
       if (lastPosition == null) {
         if ((variablesValues.get("lat") != 0) && (variablesValues.get("lon") != 0)) {
           currPosition = lastPosition = roadnetwork.findClosestPoint(roadnetwork.toXY(variablesValues.get("lat"), variablesValues.get("lon")));
+          coordinates = new LatLon(variablesValues.get("lat"), variablesValues.get("lon"));
         }
       } else {
         if (variablesValues.get("temp") >= 0) c = color(map(variablesValues.get("temp"), -10, 30, 0, 255), map(variablesValues.get("temp"), -10, 30, 0, 255), 0);
@@ -226,6 +240,7 @@ public class GPSTempHum extends Sensor {
 
         lastPosition = currPosition.copy();
         currPosition = roadnetwork.findClosestPoint(roadnetwork.toXY(variablesValues.get("lat"), variablesValues.get("lon")));
+        coordinates.set(variablesValues.get("lon"), variablesValues.get("lat"));
       }
 
       if ((payloadFields.getDouble("lat") != 0) && (payloadFields.getDouble("lon") != 0)) {
@@ -243,6 +258,16 @@ public class GPSTempHum extends Sensor {
 
 
   /**
+   * Updates the value of selected
+   * @param obj Object the Observable is sending
+   */
+  private void select(Object obj) {
+    LatLon location = (LatLon) obj;
+    if (coordinates != null) selected = (coordinates.dist(location) < 20);
+  }
+
+
+  /**
    * Draw sensor with its properties in a roadnetwork
    * @param canvas  Canvas in which to draw 
    * @param size    Size of the ellipse
@@ -251,9 +276,10 @@ public class GPSTempHum extends Sensor {
   @Override
     public void draw(Canvas canvas, int size) {
     if (lastPosition != null && c != 0) {
+      canvas.strokeWeight(2);
       if (selected) {
         canvas.stroke(#D32D41);
-      } else canvas.noStroke();
+      } else canvas.stroke(0);
 
       canvas.fill(c);
 
@@ -267,27 +293,19 @@ public class GPSTempHum extends Sensor {
       if (decreasing) rad = rad - 0.1;
       if (!decreasing) rad = rad + 0.1;
       if (rad < size) decreasing = false;
-      if (rad > 12) decreasing = true;
+      if (rad > 15) decreasing = true;
     }
   }
 
 
   /**
-   * Sets the value of selected
-   * @param s  New value for selected
-   */
-  public void setSelected(boolean s) {
-    selected = s;
-  }
-
-
-  /**
-   * Draws a line graph from the last 3 collected temperature values 
+   * Creates a line graph from the last 3 collected temperature values 
    * @param canvas  PGraphics object to draw on
    * @param font    PFont object to be used for text
    */
-  public void tempDashboard(PGraphics canvas, PFont font) {
+  private void tempDashboard(PGraphics dashboard, PGraphics canvas, PFont font) {
     float lineWidth = (float) 0.8 * canvas.width/(recentTemps.size() - 1);
+    canvas.beginDraw();
     canvas.textFont(font);
 
     canvas.stroke(#555256);
@@ -334,16 +352,20 @@ public class GPSTempHum extends Sensor {
     canvas.rotate(-HALF_PI);
     canvas.text("TEMP ºC", -canvas.width/5.5, canvas.height/6);
     canvas.popStyle();
+    canvas.endDraw();
+
+    dashboard.image(canvas, 0, 0);
   }
 
 
   /**
-   * Draws a line graph from the last 3 collected humidity values 
+   * Creates a line graph from the last 3 collected humidity values 
    * @param canvas  PGraphics object to draw on
    * @param font    PFont object to be used for text
    */
-  public void humDashboard(PGraphics canvas, PFont font) {
+  private void humDashboard(PGraphics dashboard, PGraphics canvas, PFont font) {
     float lineWidth = (float) 0.8 * canvas.width/(recentHums.size() - 1);
+    canvas.beginDraw();
     canvas.textFont(font);
 
     canvas.stroke(#555256);
@@ -390,15 +412,19 @@ public class GPSTempHum extends Sensor {
     canvas.rotate(-HALF_PI);
     canvas.text("HUM %", -canvas.width/5.5, canvas.height/6);
     canvas.popStyle();
+    canvas.endDraw();
+
+    dashboard.image(canvas, dashboard.width * 0.3, 0);
   }
 
 
   /**
-   * Shows the last 3 addresses where the sensor has been
+   * Writes the last 3 addresses where the sensor has been
    * @param canvas  PGraphics object to show the addresses on
    * @param font    PFont object to be used for text
    */
-  public void adrssDashboard(PGraphics canvas, PFont font) {
+  private void addrssDashboard(PGraphics dashboard, PGraphics canvas, PFont font) {
+    canvas.beginDraw();
     canvas.textFont(font);
 
     canvas.stroke(#555256);
@@ -418,6 +444,26 @@ public class GPSTempHum extends Sensor {
     canvas.textSize(0.15 * canvas.height);
     canvas.text("ADDRESSES", canvas.width/2, 0);
     canvas.popStyle();
+    canvas.endDraw();
+
+    dashboard.image(canvas, dashboard.width * 0.6, 0);
+  }
+
+
+  /**
+   * Shows the 3 dashboards together
+   * @param dashboard      PGraphics object to show all the dashboards
+   * @param canvasTemp     PGraphics object to draw the temperature line graph
+   * @param canvasHum      PGraphics object to draw the humidity line graph
+   * @param canvasAddrss   PGraphics object to write down the addresses
+   * @param font           PFont to be used when writing
+   */
+  public void drawDashboard(PGraphics dashboard, PGraphics canvasTemp, PGraphics canvasHum, PGraphics canvasAddrss, PFont font) {
+    if (selected) {
+      tempDashboard(dashboard, canvasTemp, font);
+      humDashboard(dashboard, canvasHum, font);
+      addrssDashboard(dashboard, canvasAddrss, font);
+    }
   }
 }
 

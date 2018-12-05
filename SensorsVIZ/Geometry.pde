@@ -4,35 +4,36 @@
  * @version       1.0
  */
 public static class Geometry {
-
-  /**
-   * Check if a point is contained in a line
-   * @param point  Point to check
-   * @param l1  Point 1 that defines the line
-   * @param l2  Point 2 that defines the line
-   * @returns true if point is contained in line, false otherwise 
-   */
-  public static boolean inLine(PVector point, PVector l1, PVector l2) {
+  public static boolean inLine(PVector p, PVector a, PVector b) {
     final float EPSILON = 0.001f;
-    PVector l1p = PVector.sub(point, l1);
-    PVector line = PVector.sub(l2, l1);
-    return PVector.angleBetween(l1p, line) <= EPSILON && l1p.mag() < line.mag();
+    PVector ap = PVector.sub(p, a);
+    PVector ab = PVector.sub(b, a);
+    return PVector.angleBetween(ap, ab) <= EPSILON && ap.mag() < ab.mag();
   }
 
-  /**
-   * Find the perpendicular projection of a point over a line
-   * @param point  Point to project
-   * @param l1  Point 1 that defines the line
-   * @param l2  Point 2 that defines the line
-   * @returns the point in the line that is perpendicular to the given point, or line's end point if perpendicular is outside
-   */
-  public static PVector scalarProjection(PVector point, PVector l1, PVector l2) {
-    PVector l1p = PVector.sub(point, l1);
-    PVector line = PVector.sub(l2, l1);
-    float lineLength = line.mag();
-    line.normalize();
-    float dotProd = l1p.dot(line);
-    line.mult( dotProd );
-    return line.mag() > lineLength ? l2 : dotProd < 0 ? l1 : PVector.add(l1, line);
+  public static PVector scalarProjection(PVector p, PVector a, PVector b) {
+    PVector ap = PVector.sub(p, a);
+    PVector ab = PVector.sub(b, a).normalize();
+    ab.mult( ap.dot(ab) );
+    return PVector.add(a, ab);
+  }
+
+  public static boolean inTriangle(PVector p, PVector t1, PVector t2, PVector t3) {
+    boolean b1 = Sign(p, t1, t2) < 0.0f;
+    boolean b2 = Sign(p, t2, t3) < 0.0f;
+    boolean b3 = Sign(p, t3, t1) < 0.0f;
+    return ((b1 == b2) && (b2 == b3));
+  }
+
+
+  private static float Sign(PVector p1, PVector p2, PVector p3) {
+    return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+  }
+
+
+  private static PVector linesIntersection(PVector p1, PVector p2, PVector p3, PVector p4) {
+    float d = (p2.x-p1.x) * (p4.y - p3.y) - (p2.y-p1.y) * (p4.x - p3.x);
+    if (d == 0) return null;
+    return new PVector(p1.x+(((p3.x - p1.x) * (p4.y - p3.y) - (p3.y - p1.y) * (p4.x - p3.x)) / d)*(p2.x-p1.x), p1.y+(((p3.x - p1.x) * (p4.y - p3.y) - (p3.y - p1.y) * (p4.x - p3.x)) / d)*(p2.y-p1.y));
   }
 }

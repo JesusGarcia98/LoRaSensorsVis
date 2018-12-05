@@ -28,7 +28,7 @@ public class Lanes {
 
 
   /**
-   * Transform from polar coordinates to (X, Y ) of the canvas
+   * Transform from polar coordinates to (X, Y) of the canvas
    * @param lat
    * @param lon 
    */

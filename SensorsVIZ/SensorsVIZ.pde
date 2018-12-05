@@ -20,7 +20,7 @@ Sensors sensors;
 // Canvas and Surface configuration
 int simWidth = 1000;
 int simHeight = 847;
-final String bgPath = "bg/orto_small.jpg";
+final String bgPath = "bg/orto.png";
 final PVector[] bounds = new PVector[] {
   new PVector(42.482119, 1.489794), 
   new PVector(42.533768, 1.572122)
@@ -32,11 +32,18 @@ PVector[] roi = new PVector[] {
   new PVector(42.496164, 1.515728)
 };
 
+LatLon[] ROI = new LatLon[] {
+  new LatLon(42.505086, 1.509961), 
+  new LatLon(42.517066, 1.544024), 
+  new LatLon(42.508161, 1.549798), 
+  new LatLon(42.496164, 1.515728)
+};
+
 // Roadnetwork configuration
 String roadnetworkPath = "roads/roads.geojson";
 
 // MQTT configuration
-String broker = "<>://eu.thethings.network:<port>";
+String broker = "<>://<yourRegion>.thethings.network:<port>";
 String user = "<appID>";
 String password = "ttn-account-v2.<lotsOfCharacters>";
 String topic = "<appID>/devices/<devID>/up";
@@ -55,7 +62,7 @@ Heatmap heatmap;
 
 //Dashboard object
 WarpSurface dashSurface;
-Dashboard dashboard;
+DashboardGPSTempHum dashboard;
 PGraphics dashCanvas;
 
 //Font
@@ -76,10 +83,10 @@ void setup() {
   simWidth = BG.width;
   simHeight = BG.height;
 
-  surface = new WarpSurface(this, 900, 300, 10, 5);
-  surface.loadConfig("warp.xml");
+  surface = new WarpSurface(this, 900, 300, 10, 5, ROI);
+  surface.loadMainConfig("warp.xml");
 
-  dashSurface = new WarpSurface(this, 1400, 160, 4, 2);
+  dashSurface = new WarpSurface(this, 1400, 160, 4, 2, null);
   dashSurface.loadConfig("dash.xml");
   dashCanvas = createGraphics(1400, 160);
 
@@ -92,9 +99,9 @@ void setup() {
   client.setCallback();
   client.subscribe(topic);
 
-  sensors = new Sensors(sensorsPath, client, roadnetwork);
+  sensors = new Sensors(sensorsPath, client, roadnetwork, surface);
 
-  dashboard = new Dashboard(sensors.getSensors());
+  dashboard = new DashboardGPSTempHum(sensors.getSensors());
 
   mint = color(0, 255, 255);
   maxt = color(255, 255, 0);
@@ -102,9 +109,9 @@ void setup() {
   heatmap = new Heatmap(0, 0, simWidth, simHeight);
   heatmap.setBrush("hmap/brush_80x80.png", 40);
   heatmap.addGradient("neon", "hmap/neon.png");
-  
+
   gradCanvas = createGraphics(200, 30);
-  gradSurface = new WarpSurface(this, 200, 30, 2, 2);
+  gradSurface = new WarpSurface(this, 200, 30, 2, 2, null);
   gradSurface.loadConfig("grad.xml");
 }
 
@@ -116,14 +123,13 @@ void draw() {
   canvas.background(255);
   if (showBG) canvas.image(BG, 0, 0); 
   roadnetwork.draw(canvas, 1, #c0c0c0);
-  sensors.draw(canvas, 4);
+  sensors.draw(canvas, 10);
   heatmap.draw(canvas, 200, 650, 1000, 50);
   canvas.endDraw();
   surface.draw(canvas);
 
-
   dashCanvas.beginDraw();
-  dashCanvas.background(255);
+  dashCanvas.background(0);
   dashboard.draw(dashCanvas, myFont);
   dashCanvas.endDraw();
   dashSurface.draw(dashCanvas);
@@ -196,8 +202,7 @@ void keyPressed() {
     break;
 
   case 's':
-    surface.saveConfig("warp.xml");
-    println("Warp configuration saved");
+    surface.saveMainConfig("warp.xml");
     break;
 
   case 'v':
