@@ -27,4 +27,4 @@ Creates an MQTT client that subscribes to a topic and stores all the received me
 ## **Processing files**
 To use [these files](https://github.com/JesusGarcia98/LoRaSensorsVis/tree/master/SensorsVIZ), it is necessary to install this library: [eclipse-paho](https://www.eclipse.org/paho/downloads.php).
 
-Also creates an MQTT client, however, it works as an Observable which notifies all of its Observers whenever a new messages arrives. If the message is intended for a certain Observer, its values will be updated with the ones from the message. All the Observers can be visualized in a roadnetwork.
+Also creates an MQTT client, however, it works as an Observable which notifies all of its Observers whenever new messages arrive, in order to update their values if it is intended for them. Observers are visualized as an ellipse placed in a roadnetwork. When clicking on their ellipse, a dashboard of its 3 most recent values will be shown.
