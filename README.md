@@ -25,6 +25,8 @@ To use the [the file](https://github.com/JesusGarcia98/LoRaSensorsVis/blob/maste
 Creates a MQTT client that subscribes to a topic and stores all the received messages in a database. Make sure to replace the example values with your own before running it.
 
 ## **Processing files**
-To use [these files](https://github.com/JesusGarcia98/LoRaSensorsVis/tree/master/SensorsVIZ), it is necessary to install this library: [eclipse-paho](https://www.eclipse.org/paho/downloads.php).
+To use [these files](https://github.com/JesusGarcia98/LoRaSensorsVis/tree/master/SensorsVIZ), it is necessary to install these libraries: [eclipse-paho](https://www.eclipse.org/paho/downloads.php) and [BezierSQLib](https://github.com/fjenett/sql-library-processing).
 
-Also creates a MQTT client, however, it works as an Observable which notifies all of its Observers whenever new messages arrive, in order to update their values if it is intended for them. Observers are visualized as an ellipse placed in a roadnetwork. When clicking on their ellipse, a dashboard of its 3 most recent values will be shown.
+Allows visualizing (almost) real time or historical data gathered by sensors in a roadnetwork. The former is achieved by creating a MQTT client, which notifies whenever new messages arrive. Whereas the latter is made possible by connecting to your MySQL database to query it. Real time sensors and historical sensors are both visualized as ellipses placed in the roadnetwork. Their visualizations can be toggled.
+
+When viewing real time sensors, if one of them is clicked, the dashboard below the roadnetwork will show its 3 most recent values. When viewing historical sensors, writing timestamps with the format YYYY-MM-DD HH:MM:SS in the text boxes and then pressing enter, updates the visualization.
