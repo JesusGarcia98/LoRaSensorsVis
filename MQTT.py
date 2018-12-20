@@ -1,6 +1,3 @@
-/**
- * Import the necessary libraries
- */
 import paho.mqtt.client as mqtt
 import json
 import MySQLdb
@@ -10,29 +7,23 @@ import dateutil.parser
 import base64
 
 
-/**
- * Required information to connect to TTN
- */
+# Parameters to connect to TTN
 TTN_appEui = '****************'
 TTN_appKey  = '********************************'
-TTN_user = '<yourUser>'
+TTN_user = '<appID>'
 TTN_password = 'ttn-account-v2.<lotsOfCharacters>'
-TTN_tls_path = '<yourCertificate>'
+TTN_tls_path = '<certificate>'
 TTN_topic = '<appID>/devices/<devID>/up'
 
 
-/**
- * Required information to connect to your database
- */
-MySQL_host = '<yourHost>'
-MySQL_user = '<yourUser>'
-MySQL_password = '<yourPswd>'
-MySQL_db = '<yourDB>'
+# Parameters to connect to a MySQL database
+MySQL_host = '<local/IP>'
+MySQL_user = '<user>'
+MySQL_password = '<pswd>'
+MySQL_db = '<db>'
 
 
-/**
- * Custom on_connect method
- */
+# Called when trying to establish connection with the database
 def on_connect(mqttc, mosq, obj, rc):
     if (rc == 0):
         print('Successful connection with result code: ' + str(rc))
@@ -41,17 +32,12 @@ def on_connect(mqttc, mosq, obj, rc):
         print('Failed connection with result code: ' + str(rc))
 
 
-/**
- * Custom on_subscribe method
- */
+# Called after successfully subscribing to a TTN topic
 def on_subscribe(mosq, obj, mid, granted_qos):
     print('Subscribed to: ' + TTN_topic)
 
 
-/**
- * Function to retrieve the values of interest of the
- * incoming message
- */
+# Method to retrieve values of interest from the payload
 def getFieldValues(payloadFields):
     humidity = payloadFields.get('hum')
     temperature = payloadFields.get('temp')
@@ -61,15 +47,13 @@ def getFieldValues(payloadFields):
     return humidity, temperature, latitude, longitude
 
 
-/**
- * Custom on_message method
- */
+# Called whenever a new message arrives to the subscribed topic
 def on_message(mqttc, obj, msg):
     try:
         x = json.loads(msg.payload.decode('utf-8'))
         device = str(x['dev_id'])
         humidity, temperature, latitude, longitude = getFieldValues(x['payload_fields'])
-        cursor.execute("""INSERT INTO loraNode VALUES (%s, NOW(), %s, %s, %s, %s)""", (device, humidity, temperature, latitude, longitude))
+        cursor.execute("""INSERT INTO <table> VALUES (%s, NOW(), %s, %s, %s, %s)""", (device, humidity, temperature, latitude, longitude))
         db.commit()
         print('Message received! Adding to database.')
 
@@ -79,31 +63,24 @@ def on_message(mqttc, obj, msg):
         pass
 
 
-/**
- * Variable instantiation
- */
+# Create a MQTT client and a connection to a MySQL database
 mqttc = mqtt.Client()
 db = MySQLdb.connect(host=MySQL_host, user=MySQL_user, passwd=MySQL_password, db=MySQL_db)
 cursor = db.cursor()
 
-/**
- * Override paho's methods
- */
+
+# Override MQTT client's methods
 mqttc.on_connect=on_connect
 mqttc.on_message=on_message
 mqttc.on_subscribe=on_subscribe
 
-/**
- * Connection setup
- */
+
+# Connect the MQTT client to TTN and subscribe to the specified topic
 mqttc.username_pw_set(TTN_user, TTN_password)
 mqttc.tls_set(TTN_tls_path)
-mqttc.connect('<yourRegion>.thethings.network', 8883, 10)
+mqttc.connect('<region>.thethings.network', 8883, 10)
 
 
-/**
- * Mantain the established connection
- * Close database after any changes
- */
+# Keep the MQTT client active and close the database
 mqttc.loop_forever()
 db.close()

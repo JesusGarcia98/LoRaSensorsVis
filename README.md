@@ -20,11 +20,11 @@ To use [this file](https://github.com/JesusGarcia98/LoRaSensorsVis/blob/master/L
 Essentially, it makes your device connect via OTAA to TTN, creates a new byte payload every 10 seconds which includes temperature, humidity and location data and then, sends it. Includes the wiring instructions for the previously specified hardware.
 
 ## **Python file**
-To use the [the file](https://github.com/JesusGarcia98/LoRaSensorsVis/blob/master/MQTT.py), it is necessary to install the following libraries: [paho-mqtt](https://pypi.org/project/paho-mqtt/) and [MySQLdb](https://stackoverflow.com/questions/25865270/how-to-install-python-mysqldb-module-using-pip). 
+To use the [the file](https://github.com/JesusGarcia98/LoRaSensorsVis/blob/master/MQTT.py), it is necessary to install the following libraries: [paho-mqtt](https://pypi.org/project/paho-mqtt/) and [MySQLdb](https://stackoverflow.com/questions/25865270/how-to-install-python-mysqldb-module-using-pip).
 
-Creates an MQTT client that subscribes to a topic and stores all the received messages in a database. Make sure to replace the example values with your own before running it.
+Creates a MQTT client that subscribes to a topic and stores all the received messages in a database. Make sure to replace the example values with your own before running it.
 
 ## **Processing files**
 To use [these files](https://github.com/JesusGarcia98/LoRaSensorsVis/tree/master/SensorsVIZ), it is necessary to install this library: [eclipse-paho](https://www.eclipse.org/paho/downloads.php).
 
-Also creates an MQTT client, however, it works as an Observable which notifies all of its Observers whenever new messages arrive, in order to update their values if it is intended for them. Observers are visualized as an ellipse placed in a roadnetwork. When clicking on their ellipse, a dashboard of its 3 most recent values will be shown.
+Also creates a MQTT client, however, it works as an Observable which notifies all of its Observers whenever new messages arrive, in order to update their values if it is intended for them. Observers are visualized as an ellipse placed in a roadnetwork. When clicking on their ellipse, a dashboard of its 3 most recent values will be shown.
