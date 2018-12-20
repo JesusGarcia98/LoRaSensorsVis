@@ -2,7 +2,7 @@
  * Generate a shape object that can be distorted using a bunch of control points to fit an irregular
  * 3D surface where a canvas is projected using a beamer
  * @author      Marc Vilella
- * @modified    Guillem Francisco & Jesús García
+ * @modified    Jesús García
  * @version     0.3
  */
 public class WarpSurface extends Observable {
@@ -13,6 +13,7 @@ public class WarpSurface extends Observable {
   private PVector controlPoint;
 
   private boolean calibrate;
+
 
   /**
    * Construct a warp surface containing a grid of control points. By default thw surface

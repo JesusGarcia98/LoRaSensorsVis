@@ -14,6 +14,9 @@ Lanes roadnetwork;
 // MQTT client
 MQTTClient client;
 
+//SQL client
+MySQLClient mysqlClient;
+
 // Sensors facade;
 Sensors sensors;
 
@@ -51,26 +54,31 @@ String topic = "<appID>/devices/<devID>/up";
 // Sensors configuration
 String sensorsPath = "sensors/sensors.json";
 
+// MySQL configuration
+String host = "<IP>:<port>";
+String database = "<yourDB>";
+String username = "<user>";
+String pswd = "<pswd>";
+
 // Color gradient configuration
 WarpSurface gradSurface;
 PGraphics gradCanvas;
 color mint, maxt;
 boolean showGradient = true;
 
-// Heatmap object
-Heatmap heatmap;
-
 //Dashboard object
 WarpSurface dashSurface;
-DashboardGPSTempHum dashboard;
 PGraphics dashCanvas;
 
 //Font
 PFont myFont;
 
+//Artist object
+Artist artist;
+
 
 void settings() {
-  fullScreen(P3D, SPAN);
+  fullScreen(P3D);
 }
 
 
@@ -84,10 +92,10 @@ void setup() {
   simHeight = BG.height;
 
   surface = new WarpSurface(this, 900, 300, 10, 5, ROI);
-  surface.loadMainConfig("warp.xml");
+  //surface.loadMainConfig("warp.xml");
 
   dashSurface = new WarpSurface(this, 1400, 160, 4, 2, null);
-  dashSurface.loadConfig("dash.xml");
+  //dashSurface.loadConfig("dash.xml");
   dashCanvas = createGraphics(1400, 160);
 
   canvas = new Canvas(this, simWidth, simHeight, bounds, roi);
@@ -99,20 +107,19 @@ void setup() {
   client.setCallback();
   client.subscribe(topic);
 
-  sensors = new Sensors(sensorsPath, client, roadnetwork, surface);
+  mysqlClient = new MySQLClient(this, host, database, username, pswd);
+  mysqlClient.createTextBoxes(myFont);
 
-  dashboard = new DashboardGPSTempHum(sensors.getSensors());
+  sensors = new Sensors(sensorsPath, client, surface, mysqlClient);
 
-  mint = color(0, 255, 255);
-  maxt = color(255, 255, 0);
-
-  heatmap = new Heatmap(0, 0, simWidth, simHeight);
-  heatmap.setBrush("hmap/brush_80x80.png", 40);
-  heatmap.addGradient("neon", "hmap/neon.png");
+  mint = #13BCE9;
+  maxt = #F7F71B;
 
   gradCanvas = createGraphics(200, 30);
   gradSurface = new WarpSurface(this, 200, 30, 2, 2, null);
-  gradSurface.loadConfig("grad.xml");
+  //gradSurface.loadConfig("grad.xml");
+
+  artist = new Artist(sensors.getSensors(), mint, maxt, roadnetwork, mysqlClient);
 }
 
 
@@ -123,49 +130,21 @@ void draw() {
   canvas.background(255);
   if (showBG) canvas.image(BG, 0, 0); 
   roadnetwork.draw(canvas, 1, #c0c0c0);
-  sensors.draw(canvas, 10);
-  heatmap.draw(canvas, 200, 650, 1000, 50);
+  artist.draw(canvas, 15, -10, 30);
   canvas.endDraw();
   surface.draw(canvas);
 
   dashCanvas.beginDraw();
   dashCanvas.background(0);
-  dashboard.draw(dashCanvas, myFont);
+  artist.drawDashboard(dashCanvas, myFont);
   dashCanvas.endDraw();
   dashSurface.draw(dashCanvas);
 
   gradCanvas.beginDraw();
   gradCanvas.background(255);
-  drawGradient(gradCanvas, "Temperature range", "-10", "30", 200, 30, mint, maxt);
+  artist.drawGradient(gradCanvas, "Temperature range", "-10", "30", 200, 30);
   gradCanvas.endDraw();
   gradSurface.draw(gradCanvas);
-}
-
-
-void drawGradient(PGraphics canvas, String title, String min, String max, float w, float h, color c1, color c2) {
-  canvas.noFill();
-  canvas.textFont(myFont);
-  for (int i = 0; i <= w; i++) {
-    float inter = map(i, 0, w, 0, 1);
-    color c = lerpColor(c1, c2, inter);
-    canvas.stroke(c);
-    canvas.line(i, 0, i, h);
-  }
-
-  // Legend
-  canvas.pushMatrix();
-  canvas.translate(0, 0);
-  canvas.fill(0); 
-  canvas.noStroke(); 
-  canvas.textSize(10); 
-  canvas.textAlign(CENTER, TOP);
-  canvas.text(title, w/2, 0);
-  canvas.textSize(9); 
-  canvas.textAlign(LEFT, BOTTOM);
-  canvas.text(min, 0, h);
-  canvas.textAlign(RIGHT, BOTTOM);
-  canvas.text(max, w, h);
-  canvas.popMatrix();
 }
 
 
@@ -183,31 +162,30 @@ void keyPressed() {
     dashSurface.toggleCalibration();
     break;
 
-  case 'e':
-    dashSurface.saveConfig("dash.xml");
-    println("Dashboard configuration saved");
-    break;
+    //case 'e':
+    //  dashSurface.saveConfig("dash.xml");
+    //  println("Dashboard configuration saved");
+    //  break;
 
   case 'f':
     gradSurface.toggleCalibration();
     break;
 
-  case 'g':
-    gradSurface.saveConfig("grad.xml");
-    println("Gradient configuration saved");
+  case 'm':
+    artist.toggleMode();
     break;
 
-  case 'h':
-    sensors.toggleHistoricals();
+    //case 'g':
+    //  gradSurface.saveConfig("grad.xml");
+    //  println("Gradient configuration saved");
+    //  break;
+
+  case '\n':
+    mysqlClient.query();
     break;
 
-  case 's':
-    surface.saveMainConfig("warp.xml");
-    break;
-
-  case 'v':
-    heatmap.toggleVisibility();
-    heatmap.update("Sensors paths", sensors, "neon");
-    break;
+    //case 's':
+    //  surface.saveMainConfig("warp.xml");
+    //  break;
   }
 }

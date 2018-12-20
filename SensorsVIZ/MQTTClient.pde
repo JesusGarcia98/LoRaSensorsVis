@@ -8,7 +8,7 @@ import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 
 
 /**
- * MQTT-Wrapper to simplify the use of the eclipse paho library
+ * MQTTClient - Wrapper to simplify the use of the eclipse paho library
  * Extends Observable interface to notify all sensors
  * @author        Jesús García
  * @modified      Guillem Francisco
